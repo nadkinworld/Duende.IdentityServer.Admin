@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -6,6 +7,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Skoruba.Duende.IdentityServer.Admin.EntityFramework.Shared.DbContexts;
 using Skoruba.Duende.IdentityServer.Admin.EntityFramework.Shared.Entities.Identity;
 using Skoruba.Duende.IdentityServer.Shared.Configuration.Helpers;
@@ -13,6 +16,7 @@ using Skoruba.Duende.IdentityServer.STS.Identity.Configuration;
 using Skoruba.Duende.IdentityServer.STS.Identity.Configuration.Constants;
 using Skoruba.Duende.IdentityServer.STS.Identity.Configuration.Interfaces;
 using Skoruba.Duende.IdentityServer.STS.Identity.Helpers;
+using Skoruba.Duende.IdentityServer.STS.Identity.Services;
 
 namespace Skoruba.Duende.IdentityServer.STS.Identity
 {
@@ -31,6 +35,41 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity
         {
             var rootConfiguration = CreateRootConfiguration();
             services.AddSingleton(rootConfiguration);
+
+            // Configure JWT
+            var jwtSettings = Configuration.GetSection("JwtSettings").Get<JwtSettings>();
+            services.Configure<JwtSettings>(Configuration.GetSection("JwtSettings"));
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = "Bearer";
+                options.DefaultChallengeScheme = "Bearer";
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSettings.Issuer,
+                    ValidAudience = jwtSettings.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
+                };
+            });
+
+            // Add Swagger services
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo 
+                { 
+                    Title = "Identity Server API", 
+                    Version = "v1",
+                    Description = "API documentation for Identity Server"
+                });
+            });
+
             // Register DbContexts for IdentityServer and Identity
             RegisterDbContexts(services);
 
@@ -49,7 +88,7 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity
             // Add all dependencies for Asp.Net Core Identity in MVC - these dependencies are injected into generic Controllers
             // Including settings for MVC and Localization
             // If you want to change primary keys or use another db model for Asp.Net Core Identity:
-            services.AddMvcWithLocalization<UserIdentity, string>(Configuration);
+            services.AddMvcWithLocalization<UserIdentity, UserIdentityRole, string>(Configuration);
 
             // Add authorization policies for MVC
             RegisterAuthorization(services);
@@ -64,6 +103,13 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                
+                // Enable Swagger
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Identity Server API V1");
+                });
             }
             else
             {
@@ -72,8 +118,10 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity
 
             app.UsePathBase(Configuration.GetValue<string>("BasePath"));
 
-
             app.UseStaticFiles();
+            
+            // Add JWT authentication
+            app.UseAuthentication();
             UseAuthentication(app);
 
             // Add custom security headers

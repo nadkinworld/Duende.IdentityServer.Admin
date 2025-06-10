@@ -92,6 +92,7 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login(string returnUrl)
         {
+            //returnUrl = "https://192.168.3.12/monitoring/car";
             // build a model so we know what to show on the login page
             var vm = await BuildLoginViewModelAsync(returnUrl);
 
@@ -112,6 +113,7 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginInputModel model, string button)
         {
+            //model.ReturnUrl = "https://192.168.3.12/monitoring/car";
             // check if we are in the context of an authorization request
             var context = await _interaction.GetAuthorizationContextAsync(model.ReturnUrl);
 

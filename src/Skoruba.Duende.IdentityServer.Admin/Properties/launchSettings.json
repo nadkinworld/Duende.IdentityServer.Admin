@@ -3,8 +3,8 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "https://localhost:44303",
-      "sslPort": 44303
+        "applicationUrl": "https://localhost:44303",
+        "sslPort": 44303
     }
   },
   "profiles": {
@@ -17,12 +17,13 @@
       }
     },
     "Skoruba.Duende.IdentityServer.Admin": {
-      "commandName": "Project",
-      "launchBrowser": true,
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "applicationUrl": "https://localhost:44303"
+        "commandName": "Project",
+        "launchBrowser": true,
+        "environmentVariables": {
+            "ASPNETCORE_ENVIRONMENT": "Development"
+        },
+        "applicationUrl": "https://localhost:44303",
+        "sslPort": 44303
     }
   }
 }

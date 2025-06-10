@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using Duende.IdentityServer.EntityFramework.Options;
 using IdentityModel;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -208,6 +209,15 @@ namespace Skoruba.Duende.IdentityServer.Admin.UI.Api.Helpers
                 .AddDefaultTokenProviders();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+
+                //.AddOpenIdConnect("oidc", options =>
+                //{
+                //    options.BackchannelHttpHandler = new HttpClientHandler
+                //    {
+                //        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+                //    };
+                //})
+
                 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
                 {
                     options.Authority = adminApiConfiguration.IdentityServerBaseUrl;

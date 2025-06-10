@@ -25,20 +25,8 @@
                 "Description": "Your user profile information (first name, last name, etc.)",
                 "Emphasize": true,
                 "UserClaims": [
-                    "name",
-                    "family_name",
-                    "given_name",
-                    "middle_name",
-                    "nickname",
-                    "preferred_username",
-                    "profile",
-                    "picture",
-                    "website",
-                    "gender",
-                    "birthdate",
-                    "zoneinfo",
-                    "locale",
-                    "updated_at"
+                    "Permission",
+                    "profile"
                 ]
             },
             {

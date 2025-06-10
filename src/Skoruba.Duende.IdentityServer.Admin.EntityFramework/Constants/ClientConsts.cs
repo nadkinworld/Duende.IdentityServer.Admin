@@ -29,21 +29,8 @@ namespace Skoruba.Duende.IdentityServer.Admin.EntityFramework.Constants
             //http://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
             var standardClaims = new List<string>
             {
-                "name",
-                "given_name",
-                "family_name",
-                "middle_name",
-                "nickname",
-                "preferred_username",
-                "profile",
-                "picture",
-                "website",
-                "gender",
-                "birthdate",
-                "zoneinfo",
-                "locale",
-                "address",
-                "updated_at"
+                "Permission",
+                "profile"
             };
 
             return standardClaims;
