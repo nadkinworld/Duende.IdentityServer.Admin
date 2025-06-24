@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using AccessIO.Framework.Common.Cache;
 using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Extensions;
 using Duende.IdentityServer.Services;
@@ -47,8 +48,8 @@ public class AccountApiController<TUser, TRole, TKey> : ControllerBase
     private readonly RegisterConfiguration _registerConfiguration;
     private readonly IdentityOptions _identityOptions;
     private readonly ILogger<AccountApiController<TUser, TRole, TKey>> _logger;
+    private readonly IDistributedCacheService _cacheService;
     private readonly JwtSettings _jwtSettings;
-
     public AccountApiController(
         UserResolver<TUser> userResolver,
         UserManager<TUser> userManager,

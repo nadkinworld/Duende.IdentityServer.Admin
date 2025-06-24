@@ -1,65 +1,78 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using AccessIO.Framework.Common.Cache;
 using Microsoft.Extensions.Options;
 using Skoruba.Duende.IdentityServer.STS.Identity.Configuration;
 using Skoruba.Duende.IdentityServer.STS.Identity.Models;
+using Skoruba.Duende.IdentityServer.STS.Identity.Services;
 
-namespace Skoruba.Duende.IdentityServer.STS.Identity.Services
+public class RefreshTokenService : IRefreshTokenService
 {
-    public class RefreshTokenService : IRefreshTokenService
+    private readonly IDistributedCacheService _cacheService;
+    private readonly JwtSettings _jwtSettings;
+
+    public RefreshTokenService(
+        IOptions<JwtSettings> jwtSettings,
+        IDistributedCacheService cacheService)
     {
-        private readonly JwtSettings _jwtSettings;
-        private readonly ConcurrentDictionary<string, RefreshToken> _refreshTokens = new();
+        _jwtSettings = jwtSettings.Value;
+        _cacheService = cacheService;
+    }
 
-        public RefreshTokenService(IOptions<JwtSettings> jwtSettings)
-        {
-            _jwtSettings = jwtSettings.Value;
-        }
+    private string GetRefreshTokenKey(string token) => $"refresh_token:{token}";
 
-        public Task<string> GenerateRefreshTokenAsync(string userId)
+    public async Task<string> GenerateRefreshTokenAsync(string userId)
+    {
+        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        var refreshToken = new RefreshToken
         {
-            var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
-            var refreshToken = new RefreshToken
-            {
-                Token = token,
-                UserId = userId,
-                ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationInDays),
-                IsRevoked = false
-            };
-            _refreshTokens[token] = refreshToken;
-            return Task.FromResult(token);
-        }
+            Id = new Guid(userId),
+            Token = token,
+            UserId = userId,
+            ExpiresAt = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationInDays),
+            IsRevoked = false
+        };
+        var key = GetRefreshTokenKey(token);
+        var result = await _cacheService.CreateAsync<RefreshToken>(refreshToken, refreshToken.ExpiresAt - DateTime.UtcNow);
+        return token;
+    }
 
-        public Task<bool> ValidateRefreshTokenAsync(string refreshToken, string userId)
-        {
-            if (_refreshTokens.TryGetValue(refreshToken, out var tokenInfo))
-            {
-                if (!tokenInfo.IsRevoked && tokenInfo.UserId == userId && tokenInfo.ExpiresAt > DateTime.UtcNow)
-                    return Task.FromResult(true);
-            }
-            return Task.FromResult(false);
-        }
+    public async Task<bool> ValidateRefreshTokenAsync(string refreshToken, string userId)
+    {
+        var key = GetRefreshTokenKey(refreshToken);
+        var result = await _cacheService.FirstByAsync<RefreshToken>(x => x.Token == refreshToken);
+        if (!result.IsSuccess || result.Value == null)
+            return false;
 
-        public Task<string> GetUserIdFromRefreshTokenAsync(string refreshToken)
-        {
-            if (_refreshTokens.TryGetValue(refreshToken, out var tokenInfo))
-            {
-                if (!tokenInfo.IsRevoked && tokenInfo.ExpiresAt > DateTime.UtcNow)
-                    return Task.FromResult(tokenInfo.UserId);
-            }
-            return Task.FromResult<string>(null);
-        }
+        var tokenInfo = result.Value;
+        if (tokenInfo.IsRevoked || tokenInfo.UserId != userId || tokenInfo.ExpiresAt < DateTime.UtcNow)
+            return false;
 
-        public Task RevokeRefreshTokenAsync(string refreshToken)
+        return true;
+    }
+
+    public async Task<string> GetUserIdFromRefreshTokenAsync(string refreshToken)
+    {
+        var result = await _cacheService.FirstByAsync<RefreshToken>(x => x.Token == refreshToken);
+        if (!result.IsSuccess || result.Value == null)
+            return null;
+
+        var tokenInfo = result.Value;
+        if (tokenInfo.IsRevoked || tokenInfo.ExpiresAt < DateTime.UtcNow)
+            return null;
+
+        return tokenInfo.UserId;
+    }
+
+    public async Task RevokeRefreshTokenAsync(string refreshToken)
+    {
+        var result = await _cacheService.FirstByAsync<RefreshToken>(x => x.Token == refreshToken);
+        if (result.IsSuccess && result.Value != null)
         {
-            if (_refreshTokens.TryGetValue(refreshToken, out var tokenInfo))
-            {
-                tokenInfo.IsRevoked = true;
-                _refreshTokens[refreshToken] = tokenInfo;
-            }
-            return Task.CompletedTask;
+            var tokenInfo = result.Value;
+            tokenInfo.IsRevoked = true;
+            await _cacheService.UpdateAsync<RefreshToken>(x => x.Token == refreshToken, tokenInfo, tokenInfo.ExpiresAt - DateTime.UtcNow);
         }
     }
 }

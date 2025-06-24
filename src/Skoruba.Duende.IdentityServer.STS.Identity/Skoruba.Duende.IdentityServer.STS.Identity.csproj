@@ -10,6 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+		<PackageReference Include="AccessIO.Framework" Version="*-*" />
 		<PackageReference Include="AspNet.Security.OAuth.GitHub" Version="9.2.0" />
 		<PackageReference Include="AspNetCore.HealthChecks.MySql" Version="9.0.0" />
 		<PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />

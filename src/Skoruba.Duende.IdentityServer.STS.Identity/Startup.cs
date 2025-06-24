@@ -1,5 +1,9 @@
 using System;
+using System.Configuration;
 using System.Text;
+using AccessIO.Framework.Common.Cache;
+using AccessIO.Framework.Common.Cache.JsonSerialize;
+using AccessIO.Framework.Common.Cache.MemoryPack;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -35,11 +39,12 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity
         {
             var rootConfiguration = CreateRootConfiguration();
             services.AddSingleton(rootConfiguration);
-
             // Configure JWT
             var jwtSettings = Configuration.GetSection("JwtSettings").Get<JwtSettings>();
             services.Configure<JwtSettings>(Configuration.GetSection("JwtSettings"));
 
+            services.Configure<CacheConfig>(Configuration.GetSection("CacheConfig"));
+            
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = "Bearer";
@@ -94,6 +99,9 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity
             RegisterAuthorization(services);
 
             services.AddIdSHealthChecks<IdentityServerConfigurationDbContext, IdentityServerPersistedGrantDbContext, AdminIdentityDbContext, IdentityServerDataProtectionDbContext>(Configuration);
+
+            //services.AddSingleton<IDistributedCacheService, MemoryPackDistributedCacheService>();
+            services.AddSingleton<IDistributedCacheService, MemoryPackDistributedCacheService>();
 
             services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
         }
