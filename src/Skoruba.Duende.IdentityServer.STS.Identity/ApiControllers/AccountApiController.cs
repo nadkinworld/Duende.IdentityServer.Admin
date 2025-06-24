@@ -9,6 +9,7 @@ using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Extensions;
 using Duende.IdentityServer.Services;
 using Duende.IdentityServer.Stores;
+using IdentityModel.OidcClient;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -22,6 +23,7 @@ using Skoruba.Duende.IdentityServer.STS.Identity.Configuration;
 using Skoruba.Duende.IdentityServer.STS.Identity.Helpers;
 using Skoruba.Duende.IdentityServer.STS.Identity.Helpers.Localization;
 using Skoruba.Duende.IdentityServer.STS.Identity.Services;
+using IRefreshTokenService = Skoruba.Duende.IdentityServer.STS.Identity.Services.IRefreshTokenService;
 
 namespace Skoruba.Duende.IdentityServer.STS.Identity.ApiControllers;
 [ApiController]
@@ -86,7 +88,7 @@ public class AccountApiController<TUser, TRole, TKey> : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(typeof(LoginResponse), 200)]
     [ProducesResponseType(typeof(LoginErrorResponse), 400)]
-    public async Task<IActionResult> Login([FromBody] LoginInputModel model)
+    public async Task<IActionResult> Login([FromBody] LoginInputModel model, [FromServices] IRefreshTokenService refreshTokenService)
     {
         if (ModelState.IsValid)
         {
@@ -97,18 +99,16 @@ public class AccountApiController<TUser, TRole, TKey> : ControllerBase
                 if (result.Succeeded)
                 {
                     await _events.RaiseAsync(new UserLoginSuccessEvent(user.UserName, user.Id.ToString(), user.UserName));
-
-                    // Get user roles
                     var roles = await _userManager.GetRolesAsync(user);
-
-                    // Generate JWT token
                     var token = GenerateToken(user.Id.ToString(), user.UserName, roles);
+                    var refreshToken = await refreshTokenService.GenerateRefreshTokenAsync(user.Id.ToString());
 
                     return Ok(new LoginResponse
                     {
                         Success = true,
                         ReturnUrl = model.ReturnUrl,
                         Token = token,
+                        RefreshToken = refreshToken,
                         UserName = user.UserName,
                         Email = user.Email
                     });
@@ -129,6 +129,35 @@ public class AccountApiController<TUser, TRole, TKey> : ControllerBase
         }
 
         return BadRequest(new LoginErrorResponse { Error = "Invalid model state" });
+    }
+
+    [HttpPost("refreshToken")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest model, [FromServices] IRefreshTokenService refreshTokenService)
+    {
+        var userId = await refreshTokenService.GetUserIdFromRefreshTokenAsync(model.RefreshToken);
+        if (userId == null)
+            return BadRequest(new { error = "Invalid refresh token" });
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+            return BadRequest(new { error = "User not found" });
+
+        var isValid = await refreshTokenService.ValidateRefreshTokenAsync(model.RefreshToken, userId);
+        if (!isValid)
+            return BadRequest(new { error = "Invalid or expired refresh token" });
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var newToken = GenerateToken(user.Id.ToString(), user.UserName, roles);
+        var newRefreshToken = await refreshTokenService.GenerateRefreshTokenAsync(user.Id.ToString());
+
+        await refreshTokenService.RevokeRefreshTokenAsync(model.RefreshToken);
+
+        return Ok(new
+        {
+            token = newToken,
+            refreshToken = newRefreshToken
+        });
     }
 
     ///// <summary>
@@ -231,6 +260,7 @@ public class LoginResponse
     public bool RequiresTwoFactor { get; set; }
     public string ReturnUrl { get; set; }
     public string Token { get; set; }
+    public string RefreshToken { get; set; } 
     public string UserName { get; set; }
     public string Email { get; set; }
 }

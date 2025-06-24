@@ -6,5 +6,8 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity.Configuration
         public string Issuer { get; set; }
         public string Audience { get; set; }
         public int ExpirationInMinutes { get; set; }
+
+        public int RefreshTokenExpirationInDays { get; set; } = 7;
+
     }
-} 
+}
