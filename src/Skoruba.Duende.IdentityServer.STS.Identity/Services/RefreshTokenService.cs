@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using AccessIO.Framework.Common.Cache;
+using AccessIO.Framework.Common.Cache.JsonSerialize;
 using Microsoft.Extensions.Options;
 using Skoruba.Duende.IdentityServer.STS.Identity.Configuration;
 using Skoruba.Duende.IdentityServer.STS.Identity.Models;
@@ -50,6 +51,15 @@ public class RefreshTokenService : IRefreshTokenService
             return false;
 
         return true;
+    }
+    public async Task InvalidateUserPermissionCacheAsync(Guid userId)
+    {
+        var result = await _cacheService.FirstByAsync<UserPermission>(x => x.Id == userId);
+
+        if (result.IsSuccess && result.Value != null)
+        {
+            await _cacheService.DeleteAsync(result.Value);
+        }
     }
 
     public async Task<string> GetUserIdFromRefreshTokenAsync(string refreshToken)

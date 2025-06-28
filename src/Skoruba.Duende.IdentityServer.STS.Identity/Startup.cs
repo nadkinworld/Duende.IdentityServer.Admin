@@ -90,6 +90,8 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity
             // Add HSTS options
             RegisterHstsOptions(services);
 
+            services.AddSingleton<IDistributedCacheService, MemoryPackDistributedCacheService>();
+
             // Add all dependencies for Asp.Net Core Identity in MVC - these dependencies are injected into generic Controllers
             // Including settings for MVC and Localization
             // If you want to change primary keys or use another db model for Asp.Net Core Identity:
@@ -100,8 +102,6 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity
 
             services.AddIdSHealthChecks<IdentityServerConfigurationDbContext, IdentityServerPersistedGrantDbContext, AdminIdentityDbContext, IdentityServerDataProtectionDbContext>(Configuration);
 
-            //services.AddSingleton<IDistributedCacheService, MemoryPackDistributedCacheService>();
-            services.AddSingleton<IDistributedCacheService, MemoryPackDistributedCacheService>();
 
             services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
         }

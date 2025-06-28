@@ -35,6 +35,6 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity.ApiViewModels
 
     public class LogoutInputModel
     {
-        public string LogoutId { get; set; }
+        public string RefreshToken { get; set; }
     }
 } 

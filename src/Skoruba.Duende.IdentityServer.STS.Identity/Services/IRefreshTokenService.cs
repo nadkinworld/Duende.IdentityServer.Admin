@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace Skoruba.Duende.IdentityServer.STS.Identity.Services
 {
@@ -8,5 +9,6 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity.Services
         Task<bool> ValidateRefreshTokenAsync(string refreshToken, string userId);
         Task<string> GetUserIdFromRefreshTokenAsync(string refreshToken);
         Task RevokeRefreshTokenAsync(string refreshToken);
+        Task InvalidateUserPermissionCacheAsync(Guid userId);
     }
 }

@@ -10,7 +10,6 @@ using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Extensions;
 using Duende.IdentityServer.Services;
 using Duende.IdentityServer.Stores;
-using IdentityModel.OidcClient;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -23,7 +22,7 @@ using Skoruba.Duende.IdentityServer.STS.Identity.ApiViewModels;
 using Skoruba.Duende.IdentityServer.STS.Identity.Configuration;
 using Skoruba.Duende.IdentityServer.STS.Identity.Helpers;
 using Skoruba.Duende.IdentityServer.STS.Identity.Helpers.Localization;
-using Skoruba.Duende.IdentityServer.STS.Identity.Services;
+using Skoruba.Duende.IdentityServer.STS.Identity.Models;
 using IRefreshTokenService = Skoruba.Duende.IdentityServer.STS.Identity.Services.IRefreshTokenService;
 
 namespace Skoruba.Duende.IdentityServer.STS.Identity.ApiControllers;
@@ -64,7 +63,8 @@ public class AccountApiController<TUser, TRole, TKey> : ControllerBase
         RegisterConfiguration registerConfiguration,
         IdentityOptions identityOptions,
         ILogger<AccountApiController<TUser, TRole, TKey>> logger,
-        IOptions<JwtSettings> jwtSettings)
+        IOptions<JwtSettings> jwtSettings,
+        IDistributedCacheService cacheService)
     {
         _userResolver = userResolver;
         _userManager = userManager;
@@ -80,11 +80,9 @@ public class AccountApiController<TUser, TRole, TKey> : ControllerBase
         _identityOptions = identityOptions;
         _logger = logger;
         _jwtSettings = jwtSettings.Value;
+        _cacheService = cacheService;
     }
 
-    /// <summary>
-    /// Login user with username and password
-    /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(LoginResponse), 200)]
@@ -96,13 +94,27 @@ public class AccountApiController<TUser, TRole, TKey> : ControllerBase
             var user = await _userResolver.GetUserAsync(model.Username);
             if (user != default(TUser))
             {
+                var userId = user.Id.ToString();
                 var result = await _signInManager.PasswordSignInAsync(user.UserName, model.Password, model.RememberLogin, lockoutOnFailure: true);
                 if (result.Succeeded)
                 {
-                    await _events.RaiseAsync(new UserLoginSuccessEvent(user.UserName, user.Id.ToString(), user.UserName));
+                    await refreshTokenService.InvalidateUserPermissionCacheAsync(new Guid(User.GetSubjectId()));
+                    await _events.RaiseAsync(new UserLoginSuccessEvent(user.UserName, userId, user.UserName));
                     var roles = await _userManager.GetRolesAsync(user);
-                    var token = GenerateToken(user.Id.ToString(), user.UserName, roles);
-                    var refreshToken = await refreshTokenService.GenerateRefreshTokenAsync(user.Id.ToString());
+                    var token = GenerateToken(userId, user.UserName, roles);
+
+                    var permissions = await GetPermissionsAsync(roles);
+                    var key = GetPermissionCacheKey(userId);
+                    var permissionModel = new UserPermission
+                    {
+                        Id = new Guid(userId),
+                        UserId = userId,
+                        Permissions = permissions,
+                        CachedAt = DateTime.UtcNow,
+                    };
+                    await _cacheService.CreateAsync(permissionModel);
+
+                    var refreshToken = await refreshTokenService.GenerateRefreshTokenAsync(userId);
 
                     return Ok(new LoginResponse
                     {
@@ -113,11 +125,6 @@ public class AccountApiController<TUser, TRole, TKey> : ControllerBase
                         UserName = user.UserName,
                         Email = user.Email
                     });
-                }
-
-                if (result.RequiresTwoFactor)
-                {
-                    return Ok(new LoginResponse { RequiresTwoFactor = true });
                 }
 
                 if (result.IsLockedOut)
@@ -148,8 +155,21 @@ public class AccountApiController<TUser, TRole, TKey> : ControllerBase
         if (!isValid)
             return BadRequest(new { error = "Invalid or expired refresh token" });
 
+        await refreshTokenService.InvalidateUserPermissionCacheAsync(new Guid(User.GetSubjectId()));
         var roles = await _userManager.GetRolesAsync(user);
         var newToken = GenerateToken(user.Id.ToString(), user.UserName, roles);
+
+        var permissions = await GetPermissionsAsync(roles);
+        var key = GetPermissionCacheKey(userId);
+        var permissionModel = new UserPermission
+        {
+            Id = new Guid(userId),
+            UserId = userId,
+            Permissions = permissions,
+            CachedAt = DateTime.UtcNow,
+        };
+        await _cacheService.CreateAsync(permissionModel);
+
         var newRefreshToken = await refreshTokenService.GenerateRefreshTokenAsync(user.Id.ToString());
 
         await refreshTokenService.RevokeRefreshTokenAsync(model.RefreshToken);
@@ -161,56 +181,19 @@ public class AccountApiController<TUser, TRole, TKey> : ControllerBase
         });
     }
 
-    ///// <summary>
-    ///// Register a new user
-    ///// </summary>
-    //[HttpPost("register")]
-    //[AllowAnonymous]
-    //[ProducesResponseType(typeof(RegisterResponse), 200)]
-    //[ProducesResponseType(typeof(RegisterErrorResponse), 400)]
-    //public async Task<IActionResult> Register([FromBody] RegisterViewModel model)
-    //{
-    //    if (ModelState.IsValid)
-    //    {
-    //        var user = new TUser { UserName = model.Username, Email = model.Email };
-    //        var result = await _userManager.CreateAsync(user, model.Password);
 
-    //        if (result.Succeeded)
-    //        {
-    //            _logger.LogInformation("User created a new account with password.");
-
-    //            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-    //            var callbackUrl = Url.Action(
-    //                "ConfirmEmail",
-    //                "Account",
-    //                new { userId = user.Id, code },
-    //                protocol: Request.Scheme);
-
-    //            await _emailSender.SendEmailAsync(model.Email, "Confirm your email",
-    //                $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
-    //            return Ok(new RegisterResponse { Success = true });
-    //        }
-
-    //        return BadRequest(new RegisterErrorResponse { Errors = result.Errors });
-    //    }
-
-    //    return BadRequest(new RegisterErrorResponse { Error = "Invalid model state" });
-    //}
-
-    /// <summary>
-    /// Logout user
-    /// </summary>
     [HttpPost("logout")]
     [Authorize]
-    [ProducesResponseType(typeof(LogoutResponse), 200)]
-    public async Task<IActionResult> Logout([FromBody] LogoutInputModel model)
+    public async Task<IActionResult> Logout([FromBody] LogoutInputModel model, [FromServices] IRefreshTokenService refreshTokenService)
     {
-        if (User?.Identity?.IsAuthenticated == true)
+        if (!string.IsNullOrEmpty(model.RefreshToken))
         {
-            await _signInManager.SignOutAsync();
-            await _events.RaiseAsync(new UserLogoutSuccessEvent(User.GetSubjectId(), User.GetDisplayName()));
+            await refreshTokenService.RevokeRefreshTokenAsync(model.RefreshToken);
+            await refreshTokenService.InvalidateUserPermissionCacheAsync(new Guid(User.GetSubjectId()));
         }
+
+        await _signInManager.SignOutAsync();
+        await _events.RaiseAsync(new UserLogoutSuccessEvent(User.GetSubjectId(), User.GetDisplayName()));
 
         return Ok(new LogoutResponse { Success = true });
     }
@@ -228,21 +211,21 @@ public class AccountApiController<TUser, TRole, TKey> : ControllerBase
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
 
-        foreach (var role in roles)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role));
+        //foreach (var role in roles)
+        //{
+        //    claims.Add(new Claim(ClaimTypes.Role, role));
 
-            var identityRole =  _roleManager.FindByNameAsync(role).Result;
-            if (identityRole != null)
-            {
-                var roleClaims = _roleManager.GetClaimsAsync(identityRole).Result;
+        //    var identityRole =  _roleManager.FindByNameAsync(role).Result;
+        //    if (identityRole != null)
+        //    {
+        //        var roleClaims = _roleManager.GetClaimsAsync(identityRole).Result;
 
-                foreach (var claim in roleClaims.Where(c => c.Type == "Permission"))
-                {
-                    claims.Add(claim); // claim از نوع Permission
-                }
-            }
-        }
+        //        foreach (var claim in roleClaims.Where(c => c.Type == "Permission"))
+        //        {
+        //            claims.Add(claim); // claim از نوع Permission
+        //        }
+        //    }
+        //}
         var token = new JwtSecurityToken(
             issuer: _jwtSettings.Issuer,
             audience: _jwtSettings.Audience,
@@ -253,7 +236,29 @@ public class AccountApiController<TUser, TRole, TKey> : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    private async Task<List<string>> GetPermissionsAsync(IEnumerable<string> roles)
+    {
+        var permissions = new List<string>();
+
+        foreach (var role in roles)
+        {
+            var roleEntity = await _roleManager.FindByNameAsync(role);
+            var roleClaims = await _roleManager.GetClaimsAsync(roleEntity);
+
+            permissions.AddRange(roleClaims
+                .Where(c => c.Type == "Permission")
+                .Select(c => c.Value));
+        }
+
+        return permissions.Distinct().ToList();
+    }
+
+    private string GetPermissionCacheKey(string userId) => $"user-permissions:{userId}";
+
+
 }
+
 
 public class LoginResponse
 {
@@ -261,7 +266,7 @@ public class LoginResponse
     public bool RequiresTwoFactor { get; set; }
     public string ReturnUrl { get; set; }
     public string Token { get; set; }
-    public string RefreshToken { get; set; } 
+    public string RefreshToken { get; set; }
     public string UserName { get; set; }
     public string Email { get; set; }
 }
