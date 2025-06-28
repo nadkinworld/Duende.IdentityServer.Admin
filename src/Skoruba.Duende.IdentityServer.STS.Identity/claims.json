@@ -1,0 +1,10 @@
+[
+  {
+    "Role": "Admin",
+    "Claims": ["CanEdit", "CanDelete"]
+  },
+  {
+    "Role": "User",
+    "Claims": ["CanView"]
+  }
+]

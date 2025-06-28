@@ -1,5 +1,6 @@
 using System;
 using System.Configuration;
+using System.IO;
 using System.Text;
 using AccessIO.Framework.Common.Cache;
 using AccessIO.Framework.Common.Cache.JsonSerialize;
@@ -20,6 +21,7 @@ using Skoruba.Duende.IdentityServer.STS.Identity.Configuration;
 using Skoruba.Duende.IdentityServer.STS.Identity.Configuration.Constants;
 using Skoruba.Duende.IdentityServer.STS.Identity.Configuration.Interfaces;
 using Skoruba.Duende.IdentityServer.STS.Identity.Helpers;
+using Skoruba.Duende.IdentityServer.STS.Identity.Seeder;
 using Skoruba.Duende.IdentityServer.STS.Identity.Services;
 
 namespace Skoruba.Duende.IdentityServer.STS.Identity
@@ -149,6 +151,13 @@ namespace Skoruba.Duende.IdentityServer.STS.Identity
                     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
                 });
             });
+
+            using (var scope = app.ApplicationServices.CreateScope())
+            {
+                var serviceProvider = scope.ServiceProvider;
+                var claimsJsonPath = Path.Combine(env.ContentRootPath, "claims.json");
+                RoleClaimSeeder.SeedAsync(serviceProvider, claimsJsonPath).GetAwaiter().GetResult();
+            }
         }
 
         public virtual void RegisterDbContexts(IServiceCollection services)
