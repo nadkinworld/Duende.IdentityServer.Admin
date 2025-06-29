@@ -13,7 +13,15 @@
     <link rel="icon" type="image/x-icon" href="@UrlHelper.Content(AdminConfiguration.FaviconUri)" />
     <link rel="shortcut icon" type="image/x-icon" href="@UrlHelper.Content(AdminConfiguration.FaviconUri)" />
     <title>@ViewData["Title"] - @AdminConfiguration.PageTitle</title>
+    
+    <style>
+        .btn-primary{
+                background-color: #0067A5 !important;
+                font-weight: 500 !important;
+            border-radius: 0.25rem !important;
+        }
 
+    </style>
     <environment include="Development">
         <link href="~/dist/css/bundle.min.css" asp-append-version="true" rel="stylesheet" />
         @await Html.PartialAsync("Common/ThemeResources")
@@ -33,16 +41,18 @@
     @await RenderSectionAsync("styles", required: false)
 </head>
 <body>
-
     <div class="menu d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 border-bottom box-shadow">
         <!--Site name -->
-        <h3 class="menu-logo my-0 mr-md-auto font-weight-normal"><a class="logo" asp-area="@CommonConsts.AdminUIArea" asp-controller="Home" asp-action="Index">@AdminConfiguration.PageTitle</a></h3>
+        <h3 class="menu-logo my-0 mr-md-auto font-weight-normal">
+            <img class="img-fluid" alt="Logo" src="@UrlHelper.Content(AdminConfiguration.FaviconUri)">
+            <a class="logo" asp-area="@CommonConsts.AdminUIArea" asp-controller="Home" asp-action="Index">@AdminConfiguration.PageTitle</a>
+            </h3>
 
         <!--Menu item -->
-        <vc:identity-server-link></vc:identity-server-link>
+       @*  <vc:identity-server-link></vc:identity-server-link> *@
 
         <!--Menu item -->
-        <div class="menu-item my-2 my-md-0 mr-md-3 dropdown">
+       @*  <div class="menu-item my-2 my-md-0 mr-md-3 dropdown">
             <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
                 @Localizer["TitleConfiguration"]
             </button>
@@ -57,7 +67,7 @@
                 <a class="dropdown-item" asp-area="@CommonConsts.AdminUIArea" asp-controller="Grant" asp-action="PersistedGrants">@Localizer["LinkPersistedGrants"]</a>
                 <a class="dropdown-item" asp-area="@CommonConsts.AdminUIArea" asp-controller="Key" asp-action="Keys">@Localizer["Keys"]</a>
             </div>
-        </div>
+        </div> *@
 
         <!--Menu item -->
         <div class="menu-item my-2 my-md-0 mr-md-3 dropdown">
@@ -88,7 +98,7 @@
         <!--Menu item -->
         @if (User.Identity.IsAuthenticated)
         {
-            <a class="menu-item my-2 btn btn-outline-primary" asp-area="@CommonConsts.AdminUIArea" asp-action="Logout" asp-controller="Account">@User.GetDisplayName() - @Localizer["LinkLogout"]</a>
+            <a class="menu-item my-2 btn btn-outline-primary" asp-area="@CommonConsts.AdminUIArea" asp-action="Logout" asp-controller="Account">@Localizer["LinkLogout"]</a>
         }
 
         <!--Menu button - show in < MD -->
@@ -100,7 +110,7 @@
     <div class="container">
         @RenderBody()
 
-        <footer class="pt-4 my-md-5 pt-md-5 border-top">
+       @*  <footer class="pt-4 my-md-5 pt-md-5 border-top">
             <div class="row">
                 <div class="col-6 col-md">
                     @AdminConfiguration.PageTitle
@@ -115,7 +125,7 @@
             </div>
 
 
-        </footer>
+        </footer> *@
     </div>
 
     <environment include="Development">

@@ -32,9 +32,9 @@
         <!--Button-->
         <div class="form-group row">
             <div class="col-md-12 col-m-b-10  col-m-t-10">
-                <a asp-area="@CommonConsts.AdminUIArea" asp-action="UserClaims" asp-route-id="@Model.Id" class="btn btn-outline-primary">@Localizer["ButtonManageUserClaims"]</a>
+                @* <a asp-area="@CommonConsts.AdminUIArea" asp-action="UserClaims" asp-route-id="@Model.Id" class="btn btn-outline-primary">@Localizer["ButtonManageUserClaims"]</a> *@
                 <a asp-area="@CommonConsts.AdminUIArea" asp-action="UserRoles" asp-route-id="@Model.Id" class="btn btn-outline-primary">@Localizer["ButtonManageUserRoles"]</a>
-                <a asp-area="@CommonConsts.AdminUIArea" asp-action="UserProviders" asp-route-id="@Model.Id" class="btn btn-outline-primary">@Localizer["ButtonManageUserExternalProviders"]</a>
+                @* <a asp-area="@CommonConsts.AdminUIArea" asp-action="UserProviders" asp-route-id="@Model.Id" class="btn btn-outline-primary">@Localizer["ButtonManageUserExternalProviders"]</a> *@
                 <a asp-area="@CommonConsts.AdminUIArea" asp-action="AuditLog" asp-controller="Log" asp-route-subjectIdentifier="@Model.Id" class="btn btn-primary">@Localizer["Audit Log"]</a>
                 <a asp-area="@CommonConsts.AdminUIArea" asp-action="UserChangePassword" asp-route-id="@Model.Id" class="btn btn-dark">@Localizer["ButtonChangePassword"]</a>
                 <a asp-area="@CommonConsts.AdminUIArea" asp-action="UserDelete" asp-route-id="@Model.Id" class="btn btn-danger">@Localizer["ButtonDeleteUser"]</a>
@@ -99,7 +99,7 @@
                     </div>
 
                     <!--Checkbox-->
-                    <div class="form-group row">
+                  @*   <div class="form-group row">
                         <label asp-for="PhoneNumberConfirmed" class="col-sm-3 col-form-label">
                             @await Html.PartialAsync("User/Section/Label", "UserPhoneNumberConfirmed")
                         </label>
@@ -108,7 +108,7 @@
                                 <input asp-for="PhoneNumberConfirmed" type="checkbox">
                             </toggle-button>
                         </div>
-                    </div>
+                    </div> *@
 
                     <!--Checkbox-->
                     <div class="form-group row">
@@ -123,7 +123,7 @@
                     </div>
 
                     <!--Checkbox-->
-                    <div class="form-group row">
+               @*      <div class="form-group row">
                         <label asp-for="TwoFactorEnabled" class="col-sm-3 col-form-label">
                             @await Html.PartialAsync("User/Section/Label", "UserTwoFactorEnabled")
                         </label>
@@ -132,7 +132,7 @@
                                 <input asp-for="TwoFactorEnabled" type="checkbox">
                             </toggle-button>
                         </div>
-                    </div>
+                    </div> *@
 
                     <!--Input - text -->
                     <div class="form-group row">

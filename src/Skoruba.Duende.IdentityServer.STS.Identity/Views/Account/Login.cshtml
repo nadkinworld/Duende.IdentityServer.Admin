@@ -6,9 +6,9 @@
 @inject IRootConfiguration RootConfiguration
 
 <div class="login-page">
-    <div class="page-header">
+   @*  <div class="page-header">
         <h1>@Localizer["Title"]</h1>
-    </div>
+    </div> *@
 
     @await Html.PartialAsync("_ValidationSummary")
 
@@ -18,7 +18,7 @@
         {
             <div class="col-sm-6">
                 <div class="card mt-3">
-                    <h5 class="card-header">@Localizer["LocalLogin"]</h5>
+                    <h5 class="card-header">@Localizer["Title"]</h5>
                     <div class="card-body">
                         <form asp-route="Login">
                             <input type="hidden" asp-for="ReturnUrl" />
@@ -50,7 +50,7 @@
                                     </div>
                                 </div>
 
-                                @if (Model.AllowRememberLogin)
+                               @*  @if (Model.AllowRememberLogin)
                                 {
                                     <div class="form-group login-remember row">
                                         <div class="col-sm-9">
@@ -62,18 +62,18 @@
                                             </toggle-button>
                                         </div>
                                     </div>
-                                }
+                                } *@
 
                                 <!--Button-->
                                 <div class="form-group row">
                                     <div class="col-sm-12">
                                         <button class="btn btn-primary" name="button" value="login">@Localizer["Login"]</button>
-                                        <button class="btn btn-secondary" name="button" value="cancel">@Localizer["Cancel"]</button>
+                                       @*  <button class="btn btn-secondary" name="button" value="cancel">@Localizer["Cancel"]</button>
                                         <a asp-action="ForgotPassword" asp-controller="Account" class="btn btn-info" value="forgot">@Localizer["Forgot"]</a>                                        
                                         @if (RootConfiguration.RegisterConfiguration.Enabled)
                                         {
                                             <a asp-action="Register" asp-controller="Account" class="btn btn-dark" value="forgot">@Localizer["Register"]</a>
-                                        }
+                                        } *@
                                     </div>
                                 </div>
                             </fieldset>

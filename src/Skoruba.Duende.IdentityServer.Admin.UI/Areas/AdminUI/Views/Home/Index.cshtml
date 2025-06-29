@@ -10,12 +10,12 @@
 }
 
 <div class="welcome-block px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
-    <h1 class="display-4">@AdminConfiguration.PageTitle</h1>
-    <p class="lead">@Localizer["PageSubTitle"]</p>
+    @* <h1 class="display-4">@AdminConfiguration.PageTitle</h1> *@
+    @* <p class="lead">@Localizer["PageSubTitle"]</p> *@
 </div>
 
 <!-- Cards -->
-<div class="card-deck mb-3 text-center">
+@* <div class="card-deck mb-3 text-center">
     <!-- Clients -->
     <div class="card mb-4 box-shadow">
         <div class="card-header">
@@ -56,13 +56,13 @@
   
 
 
-</div>
+</div> *@
 
 
 <div class="card-deck mb-3 text-center">
 
       <!-- Api Scopes -->
-    <div class="card mb-4 box-shadow">
+  @*   <div class="card mb-4 box-shadow">
         <div class="card-header">
             <h4 class="my-0 font-weight-normal">@Localizer["ButtonApiScopes"]</h4>
         </div>
@@ -71,6 +71,19 @@
                 <span class="oi oi-wrench" title="Api Scopes" aria-hidden="true"></span>
             </h1>
             <a asp-area="@CommonConsts.AdminUIArea" asp-controller="Configuration" asp-action="ApiScopes" class="btn btn-lg btn-block btn-outline-primary">@Localizer["ButtonManage"]</a>
+        </div>
+    </div>
+ *@
+
+    <div class="card mb-4 box-shadow">
+        <div class="card-header">
+            <h4 class="my-0 font-weight-normal">@Localizer["ButtonClients"]</h4>
+        </div>
+        <div class="card-body">
+            <h1 class="card-title">
+                <span class="oi oi-monitor" title="Clients" aria-hidden="true"></span>
+            </h1>
+            <a asp-area="@CommonConsts.AdminUIArea" asp-controller="Configuration" asp-action="Clients" class="btn btn-lg btn-block btn-primary">@Localizer["ButtonManage"]</a>
         </div>
     </div>
 
@@ -95,7 +108,7 @@
             <h1 class="card-title">
                 <span class="oi oi-lock-locked" title="Roles" aria-hidden="true"></span>
             </h1>
-            <a asp-area="@CommonConsts.AdminUIArea" asp-controller="Identity" asp-action="Roles" class="btn btn-lg btn-block btn-outline-primary">@Localizer["ButtonManage"]</a>
+            <a asp-area="@CommonConsts.AdminUIArea" asp-controller="Identity" asp-action="Roles" class="btn btn-lg btn-block btn-primary">@Localizer["ButtonManage"]</a>
         </div>
     </div>
 
@@ -103,7 +116,7 @@
 
 
 </div>
-
+@* 
 <div class="card-deck mb-3 text-center">
 
      <!-- Persisted Grants -->
@@ -146,4 +159,4 @@
     </div>
 
 
-</div>
+</div> *@
