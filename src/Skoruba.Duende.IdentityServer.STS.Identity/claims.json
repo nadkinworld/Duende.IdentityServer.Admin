@@ -1,8 +1,8 @@
 [
-  {
-    "Role": "Admin",
-    "Claims": ["CanEdit", "CanDelete"]
-  },
+    {
+        "Role": "مدیر سامانه",
+        "Claims": [ "SuperAdmin" ]
+    },
   {
     "Role": "User",
     "Claims": ["CanView"]
